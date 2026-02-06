@@ -1,6 +1,6 @@
 ## Authors
 - *Gonçalo Barros* - [github.com/barrosgoncalo](https://github.com/barrosgoncalo)
-- *[Nome do Colega]* - [github.com/jnhorta1](https://github.com/jnhorta1)
+- *João Horta* - [github.com/jnhorta1](https://github.com/jnhorta1)
 
 ## Network Loss Simulation (Stress Testing)
 To demonstrate the protocol's reliability, both the sender and receiver include a built-in **Network Loss Simulator**. 

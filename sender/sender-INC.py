@@ -1,3 +1,11 @@
+"""
+Reliable Data Transport Protocol (UDP)
+Authors: Gonçalo Barros & João Horta
+Description: Implementation of a reliable transport layer over UDP
+             using Go-Back-N Sliding Window and Multithreading.
+Developed as part of the Computer Networks course at FCT NOVA.
+"""
+
 import sys
 import os
 from socket import *
