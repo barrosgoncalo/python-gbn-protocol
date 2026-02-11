@@ -10,8 +10,6 @@ import sys
 import os
 from socket import *
 import threading
-import time
-import queue
 import pickle
 import random
 import select
@@ -112,7 +110,14 @@ def tx_thread(s, receiver, windowSize, cond, timeout):
         # REPEATED ACK
         # S1 -> S2
         if ackNo == (expectedAck - 1):
-            continue
+            if currentState == 1:
+                currentState = 2
+            else:
+                cond.acquire()
+                retransmission(s, receiver)
+                currentState = 1
+                cond.notify()
+                cond.release()
 
         # NORMAL ACK
         elif ackNo >= expectedAck:
@@ -120,6 +125,7 @@ def tx_thread(s, receiver, windowSize, cond, timeout):
             cond.acquire()
             # window sliding
             slide_window(ackNo, expectedAck)
+            currentState = 1
             cond.notify()
             cond.release()
 
