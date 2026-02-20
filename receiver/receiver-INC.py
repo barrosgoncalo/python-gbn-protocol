@@ -6,6 +6,8 @@ Description: Implementation of a reliable transport layer over UDP
 Developed as part of the Computer Networks course at FCT NOVA.
 """
 
+# python receiver.py senderIP senderPort fileNameInSender fileNameInReceiver blockSize
+
 import sys
 from socket import *
 import threading
@@ -14,9 +16,12 @@ import queue
 import pickle
 import random
 
+TEARDOWN_TIMEOUT_SEC = 10
+PACKET_LOSS_THRESHOLD = 1
+
 def sendAck( ackNo, sock, end ):
     rand = random.randint(0,9)
-    if rand > 1:
+    if rand > PACKET_LOSS_THRESHOLD:
         toSend = (ackNo,)
         msg = pickle.dumps( toSend)
         sock.sendto( msg, end)
@@ -24,7 +29,7 @@ def sendAck( ackNo, sock, end ):
 
 def rx_thread(s: socket, sender: tuple, que: queue.Queue, bSize):
     # stops waiting for new packages if there are no packages arriving
-    s.settimeout(10)
+    s.settimeout(TEARDOWN_TIMEOUT_SEC)
     eblock = 1
 
     # waits for a new package to be recieved and sends and ack package to confirm it
@@ -40,7 +45,7 @@ def rx_thread(s: socket, sender: tuple, que: queue.Queue, bSize):
                 eblock += 1
 
             else:
-                sendAck(eblock, s, sender)
+                sendAck(eblock - 1, s, sender)
 
         except TimeoutError:
             break

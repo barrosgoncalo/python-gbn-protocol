@@ -6,6 +6,8 @@ Description: Implementation of a reliable transport layer over UDP
 Developed as part of the Computer Networks course at FCT NOVA.
 """
 
+# python3 sender.py senderPort windowSize timeoutInSeconds
+
 import sys
 import os
 from socket import *
@@ -14,6 +16,9 @@ import pickle
 import random
 import select
 import math
+
+ACK_BUFFER_SIZE = HANDSHAKE_BUFFER_SIZE = 256
+PACKET_LOSS_THRESHOLD = 1
 
 blocksInWindow = 0
 window = []
@@ -24,7 +29,7 @@ currentState = 1
 
 def sendDatagram(blockNo, contents, sock, end):
     rand = random.randint(0, 9)
-    if rand > 1:
+    if rand > PACKET_LOSS_THRESHOLD:
         toSend = (blockNo, contents)
         msg = pickle.dumps(toSend)
         sock.sendto(msg, end)
@@ -45,16 +50,16 @@ def retransmission(s, receiver):
 
 
 # calculates the blocks to pop from window
-def to_pop(ackNo, expectedNo):
-    diff = ackNo - expectedNo
+def to_pop(ackNo, windowBase):
+    diff = (ackNo - windowBase) + 1
     return min(diff, blocksInWindow)
 
 
 # slides the leftmost part of the window,
 # in other words pops the acked blocks
-def slide_window(ackNo, expectedAck):
+def slide_window(ackNo, windowBase):
     global blocksInWindow, window
-    for _ in range(to_pop(ackNo, expectedAck)):
+    for _ in range(to_pop(ackNo, windowBase)):
         # pop the acked element
         window.pop(0)
         blocksInWindow -= 1
@@ -96,7 +101,7 @@ def tx_thread(s, receiver, windowSize, cond, timeout):
             continue
 
         # ack receipt
-        ack = s.recvfrom(256)
+        ack = s.recvfrom(ACK_BUFFER_SIZE)
         # block number fetch
         ackNo = get_number(ack)
 
@@ -105,11 +110,11 @@ def tx_thread(s, receiver, windowSize, cond, timeout):
         if not blocksInWindow:
             continue
         # expected ack fetch
-        expectedAck, _ = window[0]
+        windowBase, _ = window[0]
 
         # REPEATED ACK
         # S1 -> S2
-        if ackNo == (expectedAck - 1):
+        if ackNo == (windowBase - 1):
             if currentState == 1:
                 currentState = 2
             else:
@@ -120,11 +125,11 @@ def tx_thread(s, receiver, windowSize, cond, timeout):
                 cond.release()
 
         # NORMAL ACK
-        elif ackNo >= expectedAck:
+        elif ackNo >= windowBase:
             # permission to read/update window request
             cond.acquire()
             # window sliding
-            slide_window(ackNo, expectedAck)
+            slide_window(ackNo, windowBase)
             currentState = 1
             cond.notify()
             cond.release()
@@ -150,7 +155,7 @@ def main(hostname, senderPort, windowSize, timeOutInSec):
     s = socket( AF_INET, SOCK_DGRAM)
     s.bind((hostname, senderPort))
     # interaction with receiver; no datagram loss
-    buf, rem = s.recvfrom( 256 )
+    buf, rem = s.recvfrom( HANDSHAKE_BUFFER_SIZE )
     req = pickle.loads( buf)
     fileName = req[0]
     global blockSize
@@ -181,7 +186,7 @@ def main(hostname, senderPort, windowSize, timeOutInSec):
         if sizeOfBlockRead > 0:
             sendBlock( blockNo, b, s, rem, windowSize, windowCond)
         if sizeOfBlockRead == blockSize:
-            blockNo=blockNo+1
+            blockNo += 1
         else:
             break
     f.close()

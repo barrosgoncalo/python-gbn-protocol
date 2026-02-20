@@ -2,5 +2,7 @@
 .idea/
 *.pdf
 *.zip
+*.txt
+.dockerignore
 __pycache__/
 venv/
