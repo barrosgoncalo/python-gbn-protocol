@@ -16,12 +16,13 @@ import pickle
 import random
 import select
 import math
+from collections import deque
 
 ACK_BUFFER_SIZE = HANDSHAKE_BUFFER_SIZE = 256
 PACKET_LOSS_THRESHOLD = 1
 
 blocksInWindow = 0
-window = []
+window = deque()
 is_endfile = False
 
 
@@ -61,7 +62,7 @@ def slide_window(ackNo, windowBase):
     global blocksInWindow, window
     for _ in range(to_pop(ackNo, windowBase)):
         # pop the acked element
-        window.pop(0)
+        window.popleft()
         blocksInWindow -= 1
 
 # calculates the number of blocks the file represents
