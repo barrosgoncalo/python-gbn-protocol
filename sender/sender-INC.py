@@ -175,14 +175,13 @@ def main(hostname, senderPort, windowSize, timeOutInSec):
     s.sendto( rep, rem )
     # file transfer; datagram loss possible
     windowCond = threading.Condition()
-    tid = threading.Thread( target=tx_thread,
-                            args=(s,rem,windowSize, windowCond,timeOutInSec))
+    tid = threading.Thread( target=tx_thread, args=(s,rem,windowSize, windowCond,timeOutInSec))
     tid.start()
     f = open( fileName, 'rb')
     blockNo = 1
 
     while True:
-        b = f.read( blockSize  )
+        b = f.read( blockSize )
         sizeOfBlockRead = len(b)
         if sizeOfBlockRead > 0:
             sendBlock( blockNo, b, s, rem, windowSize, windowCond)
