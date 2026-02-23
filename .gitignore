@@ -1,6 +1,6 @@
 *.zip
 
-programs/.idea/
+.idea/
 
 .DS_Store
 
